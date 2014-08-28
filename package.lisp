@@ -15,14 +15,22 @@
            #:o!-symbol-to-g!-symbol
            #:defmacro!
            #:|#"-reader|
+           #:|%enable-#"-reader-syntax|
+           #:|enable-#"-reader-syntax|
+           #:|%enable-#>-reader-syntax|
+           #:|enable-#>-reader-syntax|
            #:segment-reader
            #:match-mode-ppcre-lambda-form
            #:subst-mode-ppcre-lambda-form
            #:|#~-reader|
+           #:|%enable-#~-reader-syntax|
+           #:|enable-#~-reader-syntax|
            #:dlambda
            #:alambda
            #:aif
            #:|#`-reader|
+           #:|%enable-#`-reader-syntax|
+           #:|enable-#`-reader-syntax|
            #:alet%
            #:alet
            #:let-binding-transform
@@ -35,6 +43,8 @@
            #:pandoric-recode
            #:plambda
            #:pandoric-eval
+           #:|%enable-#f-reader-syntax|
+           #:|enable-#f-reader-syntax|
            #:fast-progn
            #:safe-progn
            #:fformat

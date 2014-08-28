@@ -147,8 +147,14 @@
                               (setq state 'normal)))))))))
    (coerce (nreverse chars) 'string)))
 
-(set-dispatch-macro-character
-  #\# #\" #'|#"-reader|)
+(defun |%enable-#"-reader-syntax| ()
+  (setf *readtable* (copy-readtable))
+  (set-dispatch-macro-character
+    #\# #\" #'|#"-reader|))
+
+(defmacro |enable-#"-reader-syntax| ()
+  '(eval-when (:compile-toplevel :load-toplevel :execute)
+     (|%enable-#"-reader-syntax|)))
 
 ; This version is from Martin Dirichs
 (defun |#>-reader| (stream sub-char numarg)
@@ -177,8 +183,14 @@
             (nthcdr (length pattern) output))
           'string)))))
 
-(set-dispatch-macro-character
-  #\# #\> #'|#>-reader|)
+(defun |%enable-#>-reader-syntax| ()
+  (setf *readtable* (copy-readtable))
+  (set-dispatch-macro-character
+    #\# #\> #'|#>-reader|))
+
+(defmacro |enable-#>-reader-syntax| ()
+  '(eval-when (:compile-toplevel :load-toplevel :execute)
+     (|%enable-#>-reader-syntax|)))
 
 (defun segment-reader (stream ch n)
   (if (> n 0)
@@ -230,7 +242,15 @@
       (t (error "Unknown #~~ mode character")))))
 
 #+cl-ppcre
-(set-dispatch-macro-character #\# #\~ #'|#~-reader|)
+(defun |%enable-#~-reader-syntax| ()
+  (setf *readtable* (copy-readtable))
+  (set-dispatch-macro-character
+    #\# #\~ #'|#~-reader|))
+
+#+cl-ppcre
+(defmacro |enable-#~-reader-syntax| ()
+  '(eval-when (:compile-toplevel :load-toplevel :execute)
+     (|%enable-#~-reader-syntax|)))
 
 (defmacro! dlambda (&rest ds)
   `(lambda (&rest ,g!args)
@@ -257,16 +277,24 @@
      (if it ,then ,else)))
 
 (eval-when (:compile-toplevel :execute :load-toplevel)
-    (defun |#`-reader| (stream sub-char numarg)
-      (declare (ignore sub-char))
-      (unless numarg (setq numarg 1))
-      `(lambda ,(loop for i from 1 to numarg
-                      collect (symb 'a i))
-         ,(funcall
-            (get-macro-character #\`) stream nil)))
+  (defun |#`-reader| (stream sub-char numarg)
+    (declare (ignore sub-char))
+    (unless numarg (setq numarg 1))
+    `(lambda ,(loop for i from 1 to numarg
+                    collect (symb 'a i))
+       ,(funcall
+          (get-macro-character #\`) stream nil)))
 
+  (defun |%enable-#`-reader-syntax| ()
+    (setf *readtable* (copy-readtable))
     (set-dispatch-macro-character
       #\# #\` #'|#`-reader|))
+
+  (defmacro |enable-#`-reader-syntax| ()
+    '(eval-when (:compile-toplevel :load-toplevel :execute)
+       (|%enable-#`-reader-syntax|))))
+
+(|enable-#`-reader-syntax|)
 
 (defmacro alet% (letargs &rest body)
   `(let ((this) ,@letargs)
@@ -376,14 +404,24 @@
 
 ;; Chapter 7
 (eval-when (:compile-toplevel :execute :load-toplevel)
-    (set-dispatch-macro-character #\# #\f
-       (lambda (stream sub-char numarg)
-         (declare (ignore stream sub-char))
-         (setq numarg (or numarg 3))
-         (unless (<= numarg 3)
-           (error "Bad value for #f: ~a" numarg))
-         `(declare (optimize (speed ,numarg)
-                             (safety ,(- 3 numarg)))))))
+   (defun |#f-reader| (stream sub-char numarg)
+     (declare (ignore stream sub-char))
+     (setq numarg (or numarg 3))
+     (unless (<= numarg 3)
+       (error "Bad value for #f: ~a" numarg))
+     `(declare (optimize (speed ,numarg)
+                         (safety ,(- 3 numarg)))))
+
+  (defun |%enable-#f-reader-syntax| ()
+    (setf *readtable* (copy-readtable))
+    (set-dispatch-macro-character
+      #\# #\f #'|#f-reader|))
+
+  (defmacro |enable-#f-reader-syntax| ()
+    '(eval-when (:compile-toplevel :load-toplevel :execute)
+       (|%enable-#f-reader-syntax|))))
+
+(|enable-#f-reader-syntax|)
 
 (defmacro fast-progn (&rest body)
   `(locally #f ,@body))
